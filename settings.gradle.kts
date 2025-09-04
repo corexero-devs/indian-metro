@@ -1,3 +1,4 @@
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 pluginManagement {
     repositories {
         google {
@@ -23,3 +24,5 @@ rootProject.name = "IndianMetro"
 include(":indianmetrocore")
 include(":bengularu")
 include(":hyderabad")
+include(":metroUi")
+include(":sutradhar")

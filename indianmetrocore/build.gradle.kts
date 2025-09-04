@@ -82,7 +82,7 @@ kotlin {
             dependencies {
                 implementation(libs.androidx.runner)
                 implementation(libs.androidx.core)
-                implementation(libs.androidx.junit)
+                implementation(libs.androidx.test.junit)
             }
         }
 
