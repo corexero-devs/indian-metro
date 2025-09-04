@@ -1,5 +1,6 @@
 package org.corexero.indianmetrocore.di
 
+import com.corexero.nativelib.NativeLib
 import org.corexero.indianmetrocore.repositoryImpl.AppConfigurationProviderImpl
 import org.corexero.sutradhar.appConfig.AppConfigurationProvider
 import org.corexero.sutradhar.encryption.EncryptionProvider
@@ -13,7 +14,7 @@ actual val platformModule: Module
         single {
             object : EncryptionProvider {
                 override fun getEncryptionKey(): String {
-                    return "#Corexero@28@virat@abhi@rahul"
+                    return NativeLib.getDBEncryptKey()
                 }
             }
         }.bind<EncryptionProvider>()

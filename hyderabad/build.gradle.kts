@@ -13,6 +13,8 @@ plugins {
     alias(libs.plugins.googleFirebaseCrashlytics)
 }
 
+fun prop(name: String) = project.findProperty(name) as String
+
 kotlin {
     androidTarget {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
@@ -73,12 +75,31 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+    signingConfigs {
+        create("debugConfig") {
+            storeFile = rootProject.file(prop("DEBUG_STORE_FILE"))
+            storePassword = prop("DEBUG_STORE_PASSWORD")
+            keyAlias = prop("DEBUG_KEY_ALIAS")
+            keyPassword = prop("DEBUG_KEY_PASSWORD")
+        }
+
+//        create("releaseConfig") {
+//            storeFile = rootProject.file(prop("RELEASE_STORE_FILE"))
+//            storePassword = prop("RELEASE_STORE_PASSWORD")
+//            keyAlias = prop("RELEASE_KEY_ALIAS")
+//            keyPassword = prop("RELEASE_KEY_PASSWORD")
+//        }
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
     buildTypes {
+        debug {
+            defaultConfig.versionName += ".dev"
+            signingConfig = signingConfigs.getByName("debugConfig")
+        }
         getByName("release") {
             isMinifyEnabled = false
         }
