@@ -1,0 +1,66 @@
+CREATE TABLE Line (
+  id INTEGER NOT NULL PRIMARY KEY,
+  name TEXT NOT NULL,
+  city INTEGER NOT NULL,
+  type INTEGER NOT NULL,
+  metadata BLOB
+);
+CREATE TABLE PlatformSequence (
+  id INTEGER PRIMARY KEY NOT NULL,
+  platform_sequence BLOB
+);
+CREATE TABLE Station (
+  id INTEGER PRIMARY KEY NOT NULL,
+  code TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  type_id INTEGER NOT NULL,
+  city INTEGER NOT NULL,
+  metadata BLOB
+);
+CREATE TABLE StationName (
+  station_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  lang INTEGER NOT NULL,
+  name_type INTEGER NOT NULL,
+  soundex TEXT,
+  soundex_index TEXT,
+  PRIMARY KEY (station_id, name, lang)
+);
+CREATE TABLE StopTimes (
+  id INTEGER NOT NULL,
+  stop_seq INTEGER NOT NULL,
+  stn_id INTEGER NOT NULL,
+  -- REFERENCES Station(id),
+  arr_time_offset INTEGER NOT NULL,
+  dep_time_offset INTEGER NOT NULL,
+  distance INTEGER NOT NULL,
+  is_stopping INTEGER NOT NULL,
+  metadata BLOB,
+  PRIMARY KEY(id, stop_seq)
+);
+CREATE TABLE Trip (
+  id TEXT NOT NULL,
+  calendar_id INTEGER NOT NULL,
+  -- REFERENCES TripCalendar(id),
+  name TEXT NOT NULL,
+  line_id INTEGER NOT NULL,
+  -- REFERENCES Line(id),
+  stop_times_id INTEGER NOT NULL,
+  -- REFERENCES StopTimes(id),
+  trip_type INTEGER NOT NULL,
+  start_time INTEGER NOT NULL,
+  metadata BLOB,
+  PRIMARY KEY (id, calendar_id)
+);
+CREATE TABLE TripCalendar (
+  id INTEGER PRIMARY KEY NOT NULL,
+  running_days_array TEXT NOT NULL,
+    -- Running days integer array.
+    -- From array idx 0->6: Sun, Mon, Tue, Wed, Thu, Fri, Sat
+    -- Weekday array -> 0,1,1,1,1,1,0
+  start_date INTEGER NOT NULL,
+  end_date INTEGER
+);
+getAllStations:
+SELECT * FROM Station INNER JOIN StationName ON Station.id = StationName.station_id WHERE Station.city = ?;

@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidKotlinMultiplatformLibrary)
     alias(libs.plugins.androidLint)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.sqlDelight)
 }
 
 kotlin {
@@ -60,6 +62,19 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
+                implementation(projects.metroUi)
+
+                api(libs.koin.core)
+                implementation(libs.koin.compose)
+                implementation(libs.koin.compose.viewmodel)
+                implementation(libs.kotlinx.serilization.json)
+                implementation(libs.kotlinx.serialization.protobuf)
+                implementation(libs.sqlDelight.common)
+
+                implementation(projects.sutradhar)
+                implementation(libs.datastore)
+                implementation(libs.datastore.preferences)
+
                 // Add KMP dependencies here
             }
         }
@@ -72,6 +87,7 @@ kotlin {
 
         androidMain {
             dependencies {
+                implementation(projects.nativelib)
                 // Add Android-specific dependencies here. Note that this source set depends on
                 // commonMain by default and will correctly pull the Android artifacts of any KMP
                 // dependencies declared in commonMain.
@@ -97,4 +113,14 @@ kotlin {
         }
     }
 
+}
+
+sqldelight {
+    databases {
+        create("IndianMetroDatabase") {
+            packageName.set("org.corexero.indianmetro.database")
+            srcDirs("src/commonMain/kotlin")
+            generateAsync.set(true)
+        }
+    }
 }
