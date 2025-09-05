@@ -4,5 +4,5 @@ import org.corexero.indianmetrocore.graphs.model.City
 import org.koin.dsl.module
 
 val hyderabadModule = module {
-    single { City.Hyderabad }
+    single { City.Delhi }
 }

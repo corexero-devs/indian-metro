@@ -131,6 +131,7 @@ WHERE Trip.stop_times_id IN ?
 getStopTimesWithStationInfoById:
 SELECT StopTimes.id AS stopTimesId,
        StopTimes.stop_seq AS stopSeq,
+       Station.id AS stationId,
        Station.code AS stationCode,
        StationName.name AS stationName,
        Station.lat AS latitude,

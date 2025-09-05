@@ -13,11 +13,13 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.decodeFromByteArray
-import kotlinx.serialization.decodeFromHexString
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.corexero.indianmetro.database.IndianMetroDatabase
 import org.corexero.indianmetrocore.graphs.RouteCalculator
 import org.corexero.indianmetrocore.protocolBufs.LineMetadata
+import org.corexero.indianmetrocore.sqldelight.GetStopTimesWithStationInfoById
+import org.corexero.indianmetrocore.sqldelight.GetTripsBetweenStations
+import org.corexero.indianmetrocore.sqldelight.GetTripsWithLineAndCalendar
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -49,7 +51,7 @@ class RouteRepositoryImpl(
             k = 1
         ).first()
 
-        val interchangesUi: List<RouteResultUi.Interchange> = route.legs.map { leg ->
+        return route.legs.map { leg ->
             // trips that have both endpoints in the same StopTimes (your first query)
             val trips = indianMetroDatabase.indianMetroDatabaseQueries
                 .getTripsBetweenStations(
@@ -67,185 +69,22 @@ class RouteRepositoryImpl(
                     running_days_array = todayWeekdayInIST().toLikePattern() // unknown -> pass something; you can replace later
                 )
                 .executeAsList()
-                .filter {
-                    it.startTime >= currentTimeSeconds
-                }.minByOrNull { it.startTime }!!
+                .filter { it.startTime >= currentTimeSeconds }.minByOrNull { it.startTime }!!
 
             val validTrip = trips.first { it.stopTimesId == latestTripInfo.stopTimesId }
 
-            // pick one (first) to read line info; if none, defaults kick in
-            val lineName = latestTripInfo.lineName
-            val lineColor = "#ff0000" // color not in queries; keep empty string as requested
-
-            // load the concrete stop records (your third query)
             val stopsRaw = indianMetroDatabase.indianMetroDatabaseQueries
                 .getStopTimesWithStationInfoById(id = validTrip.stopTimesId)
                 .executeAsList()
                 .sortedBy { it.arrivalTimeOffset }
-                .filter {
-                    it.stopSeq in validTrip.startStationStopSeq..validTrip.endStationStopSeq
-                }
 
-            val lineMetadata = latestTripInfo.lineMetadata?.let {
-                ProtoBuf.decodeFromByteArray<LineMetadata>(it)
-            }
-
-            // figure out the range for this leg on that stopTimes id
-            val startStopSeq = trips.firstOrNull()?.startStationStopSeq ?: 0L
-            val endStopSeq = trips.firstOrNull()?.endStationStopSeq ?: 0L
-            val stopTimesId = trips.firstOrNull()?.stopTimesId
-
-            val segmentStops = stopsRaw
-                .filter { it.stopTimesId == stopTimesId }
-                .filter { it.stopSeq in startStopSeq..endStopSeq }
-                .sortedBy { it.stopSeq }
-
-            // the in-between list (exclude endpoints if present)
-            val inBetweenStations: List<StationUi> =
-                if (segmentStops.size <= 2) emptyList()
-                else segmentStops.drop(1).dropLast(1).map { s ->
-                    stationUiFromDb(
-                        id = s.stopTimesId, // no station id in this row -> keep 0/stopTimesId
-                        code = s.stationCode,
-                        name = s.stationName,
-                        lineColor = lineColor,
-                        lineName = lineName,
-                        isInterchange = false,
-                        isFirst = false,
-                        isEnd = false,
-                        lat = s.latitude,
-                        lng = s.longitude
-                    )
-                }
-
-            // build source/destination StationUi for this leg
-            val startRow = segmentStops.firstOrNull()
-            val endRow = segmentStops.lastOrNull()
-
-            val fromUi = stationUiFromDb(
-                id = startRow?.stopTimesId ?: 0L,
-                code = startRow?.stationCode ?: leg.from,
-                name = startRow?.stationName ?: leg.from,
-                lineColor = lineColor,
-                lineName = lineName,
-                isInterchange = false,
-                isFirst = true,
-                isEnd = false,
-                lat = startRow?.latitude,
-                lng = startRow?.longitude
+            mapToStationList(
+                trip = validTrip,
+                tripInfo = latestTripInfo,
+                stations = stopsRaw
             )
-
-            val toUi = stationUiFromDb(
-                id = endRow?.stopTimesId ?: 0L,
-                code = endRow?.stationCode ?: leg.to,
-                name = endRow?.stationName ?: leg.to,
-                lineColor = lineColor,
-                lineName = lineName,
-                isInterchange = true,   // end of a leg → potential interchange
-                isFirst = false,
-                isEnd = true,
-                lat = endRow?.latitude,
-                lng = endRow?.longitude
-            )
-
-            RouteResultUi.Interchange(
-                sourceStation = fromUi,
-                destinationStation = toUi,
-                inBetweenStations = inBetweenStations,
-                lineColor = lineColor,
-                lineName = lineName
-            )
-        }
-        // 4) top-level UI objects for the final response
-        val sourceUi = StationUi(
-            id = sourceStation.id,
-            name = UiText.DynamicString(sourceStation.name),
-            icon = StationUi.StationIcon.Out,
-            description = null,
-            platform = null,
-            time = 0,
-            colorHex = "#ffffff",
-            isInterchange = false,
-            isFirstStation = true,
-            isEndStation = false,
-            lineName = "",
-            platformNo = null,
-            towards = null,
-            code = sourceStation.code,
-            locationUi = LocationUi(
-                lat = sourceStation.lat,
-                long = sourceStation.lng
-            )
-        )
-
-        val destUi = StationUi(
-            id = destinationStation.id,
-            name = UiText.DynamicString(destinationStation.name),
-            icon = StationUi.StationIcon.In,
-            description = null,
-            platform = null,
-            time = 0,
-            colorHex = "",
-            isInterchange = false,
-            isFirstStation = false,
-            isEndStation = true,
-            lineName = "",
-            platformNo = null,
-            towards = null,
-            code = destinationStation.code,
-            locationUi = LocationUi(
-                lat = destinationStation.lat,
-                long = destinationStation.lng
-            )
-        )
-
-        val totalStations = (route.legs.sumOf { it.stops } + 1).coerceAtLeast(1)
-
-        return RouteResultUi(
-            sourceStation = sourceUi,
-            destinationStation = destUi,
-            fare = 0, // not available → 0
-            interchanges = route.interchanges,
-            stations = totalStations,
-            interchange = interchangesUi
-        )
+        }.toRouteResultUi()
     }
-
-    private fun stationUiFromDb(
-        id: Long,
-        code: String,
-        name: String,
-        lineColor: String,
-        lineName: String,
-        isInterchange: Boolean,
-        isFirst: Boolean,
-        isEnd: Boolean,
-        lat: Double? = null,
-        lng: Double? = null
-    ): StationUi = StationUi(
-        id = id,
-        name = UiText.DynamicString(name),
-        icon = when {
-            isFirst -> StationUi.StationIcon.Out
-            isEnd -> StationUi.StationIcon.In
-            else -> StationUi.StationIcon.Train
-        },
-        description = null,
-        platform = null,
-        time = 0,
-        colorHex = lineColor,
-        isInterchange = isInterchange,
-        isFirstStation = isFirst,
-        isEndStation = isEnd,
-        lineName = lineName,
-        platformNo = null,
-        towards = null,
-        code = code,
-        locationUi = LocationUi(
-            lat = lat ?: 0.0,
-            long = lng ?: 0.0
-        )
-    )
 
     override suspend fun updatePlatForms(routeResultUi: RouteResultUi): RouteResultUi {
         // platforms data not available; return as-is
@@ -261,6 +100,88 @@ class RouteRepositoryImpl(
         destinationId: Long
     ): RecentRouteResult? {
         return null
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun mapToStationList(
+        trip: GetTripsBetweenStations,
+        tripInfo: GetTripsWithLineAndCalendar,
+        stations: List<GetStopTimesWithStationInfoById>
+    ): List<StationUi> {
+
+        val lineMetadata = tripInfo.lineMetadata?.let {
+            ProtoBuf.decodeFromByteArray<LineMetadata>(it)
+        }
+
+        val stationsInThisInterchange = stations.filter {
+            it.stopSeq >= trip.startStationStopSeq && it.stopSeq <= trip.endStationStopSeq
+        }.sortedBy { it.stopSeq }
+
+        val towardsStation = if (trip.startStationStopSeq < trip.endStationStopSeq) {
+            stations.last()
+        } else {
+            stations.first()
+        }
+        val result = mutableListOf<StationUi>()
+        var time = 0L
+        stationsInThisInterchange.forEachIndexed { index, stopWithStation ->
+            if (index != 0) {
+                time += stationsInThisInterchange[index].arrivalTimeOffset - stationsInThisInterchange[index - 1].arrivalTimeOffset
+            }
+            StationUi(
+                id = stopWithStation.stationId,
+                name = UiText.DynamicString(stopWithStation.stationName),
+                description = null,
+                platform = null,
+                platformNo = null,
+                time = time,
+                colorHex = lineMetadata?.primary ?: "#262626",
+                lineName = tripInfo.lineName,
+                towards = towardsStation.stationName,
+                code = stopWithStation.stationCode,
+                locationUi = LocationUi(
+                    lat = stopWithStation.latitude,
+                    long = stopWithStation.longitude
+                )
+            ).let { result.add(it) }
+        }
+        return result
+    }
+
+    private fun List<List<StationUi>>.toRouteResultUi(): RouteResultUi {
+        val interChange = mutableListOf<RouteResultUi.Interchange>()
+        var timeOffset = 0L
+        val updatesStations: List<List<StationUi>> = mapIndexed { index, stations ->
+            var updatesStations: List<StationUi>
+            if (index == 0) {
+                timeOffset += stations.sumOf { it.time }
+                updatesStations = stations.map { it.copy(time = it.time / 60) }
+            } else {
+                timeOffset += stations.sumOf { it.time }
+                updatesStations = stations.map { it.copy(time = (it.time + timeOffset) / 60) }
+            }
+            updatesStations
+        }
+        updatesStations.forEachIndexed { index, stations ->
+            val sourceStation = stations.first()
+            val destStation = stations.last()
+            val inBetweenStations = stations.drop(1).dropLast(1)
+            RouteResultUi.Interchange(
+                sourceStation = sourceStation,
+                destinationStation = destStation,
+                inBetweenStations = inBetweenStations,
+                lineColor = stations.first().colorHex,
+                lineName = stations.first().lineName
+            ).let { interChange.add(it) }
+        }
+        return RouteResultUi(
+            sourceStation = interChange.first().sourceStation,
+            destinationStation = interChange.last().destinationStation,
+            fare = 0,
+            interchanges = this.size - 1,
+            stations = this.flatMap { it.map { it.id } }.toSet().size,
+            interchange = interChange,
+        )
     }
 
     private enum class WeekDay(val index: Int) {
