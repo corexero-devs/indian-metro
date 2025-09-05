@@ -4,6 +4,12 @@ import app.cash.sqldelight.async.coroutines.synchronous
 import com.codeancy.metroui.domain.repository.RouteRepository
 import com.codeancy.metroui.domain.repository.StationRepository
 import org.corexero.indianmetro.database.IndianMetroDatabase
+import org.corexero.indianmetrocore.graphs.AdjacencyListManager
+import org.corexero.indianmetrocore.graphs.RouteCalculator
+import org.corexero.indianmetrocore.graphs.model.City
+import org.corexero.indianmetrocore.graphs.topology.CityTransitTopology
+import org.corexero.indianmetrocore.graphs.topology.impl.DelhiCityTransitTopology
+import org.corexero.indianmetrocore.graphs.topology.impl.OtherCityTransitTopology
 import org.corexero.indianmetrocore.repositoryImpl.RouteRepositoryImpl
 import org.corexero.indianmetrocore.repositoryImpl.StationRepositoryImpl
 import org.corexero.sutradhar.datastore.DataStoreFactory
@@ -28,9 +34,7 @@ private val path = Path(
 val indianMetroModule = module {
     singleOf(::RouteRepositoryImpl)
         .bind<RouteRepository>()
-    single {
-        StationRepositoryImpl(get(), get(named("cityId")))
-    }.bind<StationRepository>()
+    singleOf(::StationRepositoryImpl).bind<StationRepository>()
     single {
         val factory = get<SqlDriverFactory>()
         IndianMetroDatabase(
@@ -45,6 +49,16 @@ val indianMetroModule = module {
         get<DataStoreFactory>().createDataStore(DATA_STORE_NAME)
     }
     includes(platformModule)
+    singleOf(::RouteCalculator)
+    single {
+        val city = get<City>()
+        when (city.topologyId) {
+            null -> DelhiCityTransitTopology()
+            else -> OtherCityTransitTopology(city.topologyId)
+        }
+    }.bind<CityTransitTopology>()
+    singleOf(::AdjacencyListManager)
+    singleOf(::RouteCalculator)
 }
 
 expect val platformModule: Module

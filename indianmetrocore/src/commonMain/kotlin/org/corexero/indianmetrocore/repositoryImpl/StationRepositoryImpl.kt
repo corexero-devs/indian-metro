@@ -9,17 +9,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import org.corexero.indianmetro.database.IndianMetroDatabase
+import org.corexero.indianmetrocore.graphs.model.City
 import org.corexero.indianmetrocore.sqldelight.GetAllStations
 
 
 class StationRepositoryImpl(
     private val indianMetroDatabase: IndianMetroDatabase,
-    private val cityId: Long
+    private val city: City
 ) : StationRepository {
 
     override suspend fun getAllStations(): List<StationUi> {
         return withContext(Dispatchers.IO) {
-            indianMetroDatabase.indianMetroDatabaseQueries.getAllStations(cityId).executeAsList()
+            indianMetroDatabase.indianMetroDatabaseQueries.getAllStations(city.dbCityId)
+                .executeAsList()
                 .map { it.toStationUi() }
         }
     }

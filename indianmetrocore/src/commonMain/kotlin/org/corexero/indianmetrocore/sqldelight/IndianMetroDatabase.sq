@@ -62,5 +62,87 @@ CREATE TABLE TripCalendar (
   start_date INTEGER NOT NULL,
   end_date INTEGER
 );
+
+CREATE VIEW StopTimesWithStationInfo AS
+SELECT
+  StopTimes.id                AS id,
+  StopTimes.stop_seq          AS stopSeq,
+  Station.code                AS stationCode,
+  StationName.name            AS stationName,
+  Station.lat                 AS latitude,
+  Station.lng                 AS longitude,
+  StopTimes.stn_id            AS stationId,
+  StopTimes.arr_time_offset   AS arrivalTimeOffset,
+  StopTimes.dep_time_offset   AS departureTimeOffset,
+  StopTimes.distance          AS distance,
+  StopTimes.is_stopping       AS isStopping
+FROM StopTimes
+JOIN Station     ON StopTimes.stn_id = Station.id
+JOIN StationName ON Station.id = StationName.station_id
+WHERE StationName.name_type = 0;
+
+getStationById:
+SELECT * FROM Station INNER JOIN StationName ON Station.id = StationName.station_id WHERE Station.id = ?;
+
+getStationsByIds:
+SELECT * FROM Station INNER JOIN StationName ON Station.id = StationName.station_id WHERE Station.id IN ?;
+
 getAllStations:
 SELECT * FROM Station INNER JOIN StationName ON Station.id = StationName.station_id WHERE Station.city = ?;
+
+getTripsBetweenStations:
+SELECT
+  startStation.id                AS stopTimesId,
+  startStation.stationCode       AS startStationCode,
+  endStation.stationCode         AS endStationCode,
+  startStation.stationName       AS startStationName,
+  endStation.stationName         AS endStationName,
+  startStation.arrivalTimeOffset AS startStationArrivalOffset,
+  startStation.departureTimeOffset AS startStationDepartureOffset,
+  endStation.arrivalTimeOffset   AS endStationArrivalOffset,
+  endStation.departureTimeOffset AS endStationDepartureOffset,
+  startStation.stopSeq           AS startStationStopSeq,
+  endStation.stopSeq             AS endStationStopSeq
+FROM StopTimesWithStationInfo AS startStation
+JOIN StopTimesWithStationInfo AS endStation
+  ON startStation.id = endStation.id
+WHERE startStation.stationCode IN ?
+  AND endStation.stationCode = ?
+  AND startStation.stopSeq < endStation.stopSeq;
+
+getTripsWithLineAndCalendar:
+SELECT
+  Trip.id            AS tripId,
+  Trip.calendar_id   AS calendarId,
+  Trip.name          AS tripName,
+  Trip.stop_times_id AS stopTimesId,
+  Trip.trip_type     AS tripType,
+  Trip.start_time    AS startTime,
+  Trip.metadata      AS tripMetadata,
+  Line.name          AS lineName,
+  Line.city          AS city,
+  Line.metadata      AS lineMetadata
+FROM Trip
+INNER JOIN Line ON Trip.line_id = Line.id
+INNER JOIN TripCalendar ON Trip.calendar_id = TripCalendar.id
+WHERE Trip.stop_times_id IN ?
+  AND TripCalendar.running_days_array LIKE ?;
+
+getStopTimesWithStationInfoById:
+SELECT StopTimes.id AS stopTimesId,
+       StopTimes.stop_seq AS stopSeq,
+       Station.code AS stationCode,
+       StationName.name AS stationName,
+       Station.lat AS latitude,
+       Station.lng AS longitude,
+       StopTimes.arr_time_offset AS arrivalTimeOffset,
+       StopTimes.dep_time_offset AS departureTimeOffset,
+       StopTimes.distance AS distanceInDecameter,
+       StopTimes.is_stopping AS isStopping
+FROM StopTimes
+JOIN Station
+  ON StopTimes.stn_id = Station.id
+JOIN StationName
+  ON Station.id = StationName.station_id
+WHERE StopTimes.id = ?
+  AND StationName.name_type = 0;

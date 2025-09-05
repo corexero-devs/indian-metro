@@ -8,7 +8,7 @@ import kotlinx.serialization.protobuf.ProtoNumber
 @OptIn(ExperimentalSerializationApi::class)
 data class PlatformSequence(
     @ProtoNumber(1) val id: String,
-    @ProtoNumber(2) val platforms: Map<Int, String>
+    @ProtoNumber(2) val stationPlatformMap: Map<Int, String>
 )
 
 @Serializable
@@ -18,16 +18,16 @@ data class TripMetadata(@ProtoNumber(1) val flags: Int)
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class Attribute(
-    @ProtoNumber(1) val key: String,
-    @ProtoNumber(2) val value: String,
-    @ProtoNumber(3) val extra: String
+    @ProtoNumber(1) val name: String,
+    @ProtoNumber(2) val color: String,
+    @ProtoNumber(3) val textColor: String
 )
 
 @Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class LineMetadata(
-    @ProtoNumber(1) val primary: String,
-    @ProtoNumber(2) val secondary: String,
+    @ProtoNumber(1) val primary: String? = null,
+    @ProtoNumber(2) val secondary: String? = null,
     @ProtoNumber(3) val attributes: List<Attribute>
 )
 
