@@ -16,6 +16,7 @@ import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.protobuf.ProtoBuf
 import org.corexero.indianmetro.database.IndianMetroDatabase
 import org.corexero.indianmetrocore.graphs.RouteCalculator
+import org.corexero.indianmetrocore.graphs.topology.CityTransitTopology
 import org.corexero.indianmetrocore.protocolBufs.LineMetadata
 import org.corexero.indianmetrocore.sqldelight.GetStopTimesWithStationInfoById
 import org.corexero.indianmetrocore.sqldelight.GetTripsBetweenStations
@@ -26,6 +27,7 @@ import kotlin.time.ExperimentalTime
 class RouteRepositoryImpl(
     private val indianMetroDatabase: IndianMetroDatabase,
     private val routeCalculator: RouteCalculator,
+    private val cityTransitTopology: CityTransitTopology
 ) : RouteRepository {
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -48,14 +50,14 @@ class RouteRepositoryImpl(
         val route = routeCalculator.findRoutes(
             start = sourceStation.code,
             end = destinationStation.code,
-            k = 1
+            k = 10
         ).first()
 
         return route.legs.map { leg ->
             // trips that have both endpoints in the same StopTimes (your first query)
             val trips = indianMetroDatabase.indianMetroDatabaseQueries
                 .getTripsBetweenStations(
-                    stationCode = listOf(leg.from),
+                    stationCode = listOf(leg.from) + cityTransitTopology.aliasesOf(leg.from),
                     stationCode_ = leg.to
                 )
                 .executeAsList()
@@ -69,7 +71,11 @@ class RouteRepositoryImpl(
                     running_days_array = todayWeekdayInIST().toLikePattern() // unknown -> pass something; you can replace later
                 )
                 .executeAsList()
-                .filter { it.startTime >= currentTimeSeconds }.minByOrNull { it.startTime }!!
+                .filter { it.startTime >= currentTimeSeconds }.minByOrNull { it.startTime }
+
+            if (latestTripInfo == null) {
+                throw IllegalStateException("No trips found between ${leg.from} and ${leg.to}")
+            }
 
             val validTrip = trips.first { it.stopTimesId == latestTripInfo.stopTimesId }
 
@@ -154,11 +160,13 @@ class RouteRepositoryImpl(
         val updatesStations: List<List<StationUi>> = mapIndexed { index, stations ->
             var updatesStations: List<StationUi>
             if (index == 0) {
-                timeOffset += stations.sumOf { it.time }
+                timeOffset += stations.last().time / 60
                 updatesStations = stations.map { it.copy(time = it.time / 60) }
             } else {
-                timeOffset += stations.sumOf { it.time }
-                updatesStations = stations.map { it.copy(time = (it.time + timeOffset) / 60) }
+                timeOffset += stations.last().time / 60
+                updatesStations = stations.mapIndexed { index, station ->
+                    station.copy(time = station.time / 60 + timeOffset)
+                }
             }
             updatesStations
         }

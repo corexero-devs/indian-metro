@@ -91,143 +91,184 @@ class RouteCalculator(
         val interchanges: Int // legs.size - 1
     )
 
+    // --- helpers used by both functions ---
+    private data class EdgeInfo(val label: String?, val weight: Int?)
+
+    private fun aliasesOf(code: String): List<String> =
+        cityTransitTopology.aliasesOf(code).ifEmpty { emptyList() }
+
+    private fun aliasEqual(a: String, b: String): Boolean {
+        if (a == b) return true
+        val aSet = (listOf(a) + aliasesOf(a)).toSet()
+        val bSet = (listOf(b) + aliasesOf(b)).toSet()
+        return aSet.intersect(bSet).isNotEmpty()
+    }
+
+    private fun edgeInfo(a: String, b: String): EdgeInfo {
+        val edgeLabels = cityTransitTopology.edgeLineLabels()
+        val aC = listOf(a) + aliasesOf(a)
+        val bC = listOf(b) + aliasesOf(b)
+        for (aa in aC) for (bb in bC) {
+            edgeLabels[SourceAndDestination(aa, bb)]?.firstOrNull()?.let { return EdgeInfo(it.label, it.weight) }
+            edgeLabels[SourceAndDestination(bb, aa)]?.firstOrNull()?.let { return EdgeInfo(it.label, it.weight) }
+        }
+        return EdgeInfo(null, null)
+    }
+
+    private fun hopWeight(a: String, b: String): Int =
+        edgeInfo(a, b).weight ?: 1
+
+    private fun resolveLineBetween(a: String, b: String): String? {
+        edgeInfo(a, b).label?.let { return it } // prefer explicit edge label
+        val stationLines = cityTransitTopology.stationLines()
+        val aLines = (stationLines[a] ?: emptyList()) + aliasesOf(a).flatMap { stationLines[it] ?: emptyList() }
+        val bLines = (stationLines[b] ?: emptyList()) + aliasesOf(b).flatMap { stationLines[it] ?: emptyList() }
+        return aLines.toSet().intersect(bLines.toSet()).firstOrNull()
+    }
+
+    // --- corrected convertToInterchange ---
     private fun convertToInterchange(
         paths: List<Path>,
     ): List<InterchangePath> {
 
-        // Preload maps for speed
-        val edgeLabels =
-            cityTransitTopology.edgeLineLabels()                // Map<SourceAndDestination, List<LabelledGraphEdge>>
-        val stationLines =
-            cityTransitTopology.stationLines()                // Map<String, List<String>>
-
-        fun aliases(code: String) = cityTransitTopology.aliasesOf(code).ifEmpty { emptyList() }
-
-        fun resolveLineBetween(a: String, b: String): String? {
-            // 1) Try explicit edge labels (consider aliases in both directions)
-            val aCandidates = listOf(a) + aliases(a)
-            val bCandidates = listOf(b) + aliases(b)
-
-            for (aa in aCandidates) for (bb in bCandidates) {
-                edgeLabels[SourceAndDestination(aa, bb)]?.firstOrNull()?.let { return it.label }
-                edgeLabels[SourceAndDestination(bb, aa)]?.firstOrNull()
-                    ?.let { return it.label } // undirected fallback
-            }
-
-            // 2) Fall back to station-lines intersection
-            val aLines = (stationLines[a] ?: emptyList()) + aCandidates.flatMap {
-                stationLines[it] ?: emptyList()
-            }
-            val bLines = (stationLines[b] ?: emptyList()) + bCandidates.flatMap {
-                stationLines[it] ?: emptyList()
-            }
-            val common = aLines.toSet().intersect(bLines.toSet())
-            return common.firstOrNull()
-        }
-
-        fun hopWeight(a: String, b: String): Int {
-            // Use the same precedence as line resolution to fetch weight if present; else default to 1
-            val aCandidates = listOf(a) + aliases(a)
-            val bCandidates = listOf(b) + aliases(b)
-            for (aa in aCandidates) for (bb in bCandidates) {
-                edgeLabels[SourceAndDestination(aa, bb)]?.firstOrNull()?.let { return it.weight }
-                edgeLabels[SourceAndDestination(bb, aa)]?.firstOrNull()?.let { return it.weight }
-            }
-            // If edgeLineLabels() is empty in this city, weights usually came from `edges`
-            // but we don’t have that map here; assume unit weight for a hop.
-            return 1
-        }
-
         fun toInterchange(path: Path): InterchangePath {
             val nodes = path.nodes
-            if (nodes.size < 2) {
-                return InterchangePath(emptyList(), path.totalWeight, 0)
-            }
+            if (nodes.size < 2) return InterchangePath(emptyList(), path.totalWeight, 0)
 
             val legs = mutableListOf<InterchangeLeg>()
-
             var legStartIdx = 0
-            var currentLine: String? = resolveLineBetween(nodes[0], nodes[1])
+
+            // seed first hop
+            var curLine: String? = resolveLineBetween(nodes[0], nodes[1])
             var accWeight = hopWeight(nodes[0], nodes[1])
 
-            for (i in 1 until nodes.lastIndex) {
-                val nextLine = resolveLineBetween(nodes[i], nodes[i + 1])
-                val nextWeight = hopWeight(nodes[i], nodes[i + 1])
+            var i = 1
+            while (i < nodes.lastIndex) {
+                val a = nodes[i]
+                val b = nodes[i + 1]
+                val info = edgeInfo(a, b)
+                val nextLine = info.label ?: resolveLineBetween(a, b)
+                val nextWeight = info.weight ?: hopWeight(a, b)
 
-                // If the line continues, accumulate; else close the current leg and start a new one
-                if (currentLine != null && currentLine == nextLine) {
+                if (aliasEqual(a, b) && nextWeight > 0) {
+                    // positive-weight same-station link => finish current ride leg, then add a WALK leg
+                    if (i > legStartIdx) {
+                        legs += InterchangeLeg(
+                            from = nodes[legStartIdx],
+                            to = a,
+                            line = curLine ?: resolveLineBetween(nodes[legStartIdx], a) ?: "UNKNOWN",
+                            stops = i - legStartIdx,
+                            weight = accWeight
+                        )
+                    }
+                    legs += InterchangeLeg(
+                        from = a,
+                        to = b,
+                        line = info.label ?: "WALK",
+                        stops = 0,
+                        weight = nextWeight
+                    )
+                    // restart ride leg from b
+                    legStartIdx = i + 1
+                    accWeight = 0
+                    curLine = null
+                } else if (curLine != null && curLine == nextLine) {
+                    // continue on the same line
                     accWeight += nextWeight
                 } else {
-                    // Close leg [legStartIdx .. i] on currentLine (if any)
-                    val from = nodes[legStartIdx]
-                    val to = nodes[i]
-                    val stops = i - legStartIdx
-                    val lineName = currentLine ?: "UNKNOWN"
-                    legs += InterchangeLeg(from, to, lineName, stops, accWeight)
-
-                    // Start new leg
+                    // line change: close previous leg and start new
+                    legs += InterchangeLeg(
+                        from = nodes[legStartIdx],
+                        to = a,
+                        line = curLine ?: resolveLineBetween(nodes[legStartIdx], a) ?: "UNKNOWN",
+                        stops = i - legStartIdx,
+                        weight = accWeight
+                    )
                     legStartIdx = i
-                    currentLine = nextLine
+                    curLine = nextLine
                     accWeight = nextWeight
                 }
+
+                i += 1
             }
 
-            // Close the final leg to the last node
-            val from = nodes[legStartIdx]
-            val to = nodes.last()
-            val stops = nodes.lastIndex - legStartIdx
-            val lineName =
-                currentLine ?: resolveLineBetween(nodes[nodes.lastIndex - 1], nodes.last())
-                ?: "UNKNOWN"
-            legs += InterchangeLeg(from, to, lineName, stops, accWeight)
+            // close final leg to the last node (if any ride leg remains)
+            if (legStartIdx < nodes.lastIndex) {
+                legs += InterchangeLeg(
+                    from = nodes[legStartIdx],
+                    to = nodes.last(),
+                    line = curLine ?: resolveLineBetween(nodes[nodes.lastIndex - 1], nodes.last()) ?: "UNKNOWN",
+                    stops = nodes.lastIndex - legStartIdx,
+                    weight = accWeight
+                )
+            }
 
+            // count interchanges from ride legs only (ignore 0-stop WALK legs)
+            val rideLegs = legs.count { it.stops > 0 }
             return InterchangePath(
                 legs = legs,
                 totalWeight = path.totalWeight,
-                interchanges = if (legs.isEmpty()) 0 else legs.size - 1
+                interchanges = if (rideLegs == 0) 0 else rideLegs - 1
             )
         }
 
-        return paths.map { toInterchange(it) }
+        return paths.map(::toInterchange)
     }
 
+    // --- corrected filterPaths (LMJ-like) ---
+    private fun filterPaths(
+        rawPaths: List<Path>,
+        nearOptimalFactor: Double = 1.25,
+        maxPaths: Int = 10
+    ): List<Path> {
+        if (rawPaths.isEmpty()) return emptyList()
 
-    private fun filterPaths(rawPaths: List<Path>, maxPaths: Int = 10): List<Path> {
-        // 1. Drop null/empty paths
-        var paths = rawPaths.filter { it.nodes.isNotEmpty() }.toMutableList()
+        // base sort for stability
+        var paths = rawPaths
+            .filter { it.nodes.isNotEmpty() }
+            .sortedWith(compareBy<Path> { it.totalWeight }.thenBy { it.nodes.size })
+            .toMutableList()
         if (paths.isEmpty()) return emptyList()
 
-        // 2. Limit explored paths to 10
-        if (paths.size > maxPaths) {
-            paths = paths.take(maxPaths).toMutableList()
+        // cap to small working set
+        if (paths.size > maxPaths) paths = paths.take(maxPaths).toMutableList()
+
+        // simple paths only (no cycles)
+        paths = paths.filter { p -> p.nodes.size == p.nodes.toSet().size }.toMutableList()
+        if (paths.isEmpty()) return emptyList()
+
+        // no blank codes
+        paths = paths.filter { p -> p.nodes.none { it.isBlank() } }.toMutableList()
+        if (paths.isEmpty()) return emptyList()
+
+        // collapse consecutive alias-equal nodes ONLY when the hop has zero weight
+        fun collapseZeroWeightAliases(nodes: List<String>): List<String> {
+            if (nodes.size < 2) return nodes
+            val out = ArrayList<String>(nodes.size)
+            out += nodes.first()
+            for (i in 1 until nodes.size) {
+                val prev = out.last()
+                val cur = nodes[i]
+                if (aliasEqual(prev, cur) && hopWeight(prev, cur) == 0) {
+                    // skip cur (same station, zero-cost)
+                    continue
+                }
+                out += cur
+            }
+            return out
         }
-
-        // 3. Skip paths with duplicate stations (cycles)
-        paths = paths.filter { path ->
-            path.nodes.size == path.nodes.toSet().size
-        }.toMutableList()
+        paths = paths.map { p -> p.copy(nodes = collapseZeroWeightAliases(p.nodes)) }
+            .filter { it.nodes.size >= 2 }
+            .toMutableList()
         if (paths.isEmpty()) return emptyList()
 
-        // 4. Drop paths where any sublist is empty
-        paths = paths.filter { path ->
-            path.nodes.none { it.isBlank() }
-        }.toMutableList()
+        // minimal schedule-esque sanity: require at least one hop
+        paths = paths.filter { it.nodes.size >= 2 }.toMutableList()
         if (paths.isEmpty()) return emptyList()
 
-        // 5. (Schedule-based pruning in lmj.f)
-        // In original lmj this uses ScheduleTime objects.
-        // Here we'll simulate with a cutoff on path length (like "must have at least 2 hops").
-        // You can replace this with actual time-based checks.
-        val scheduleCutoff = 2
-        paths = paths.filter { it.nodes.size >= scheduleCutoff }.toMutableList()
-        if (paths.isEmpty()) return emptyList()
-
-        // 6. Drop paths where final segment is empty (already covered by isNotEmpty check)
-
-        // 7. Keep only shortest / lowest-weight paths
-        val minWeight = paths.minOf { it.totalWeight }
-        paths = paths.filter { it.totalWeight <= minWeight * 1.25 }
-            .toMutableList() // same 1.25× tolerance in lmj
+        // keep near-optimal by weight (same tolerance as before)
+        val best = paths.minOf { it.totalWeight }
+        paths = paths.filter { it.totalWeight <= best * nearOptimalFactor }.toMutableList()
 
         return paths
     }
