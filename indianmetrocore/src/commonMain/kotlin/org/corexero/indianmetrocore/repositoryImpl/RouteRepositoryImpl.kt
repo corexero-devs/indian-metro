@@ -18,9 +18,12 @@ import org.corexero.indianmetro.database.IndianMetroDatabase
 import org.corexero.indianmetrocore.graphs.RouteCalculator
 import org.corexero.indianmetrocore.graphs.topology.CityTransitTopology
 import org.corexero.indianmetrocore.protocolBufs.LineMetadata
+import org.corexero.indianmetrocore.protocolBufs.PlatformSequence
+import org.corexero.indianmetrocore.protocolBufs.TripMetadata
 import org.corexero.indianmetrocore.sqldelight.GetStopTimesWithStationInfoById
 import org.corexero.indianmetrocore.sqldelight.GetTripsBetweenStations
 import org.corexero.indianmetrocore.sqldelight.GetTripsWithLineAndCalendar
+import org.corexero.sutradhar.utils.Logger
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
@@ -79,6 +82,20 @@ class RouteRepositoryImpl(
 
             val validTrip = trips.first { it.stopTimesId == latestTripInfo.stopTimesId }
 
+            val tripMetadata = latestTripInfo.tripMetadata?.let {
+                ProtoBuf.decodeFromByteArray<TripMetadata>(it)
+            }
+
+            val platForm = tripMetadata?.let {
+                indianMetroDatabase
+                    .indianMetroDatabaseQueries.getPlatformSequenceById(it.flags.toLong())
+                    .executeAsOneOrNull()
+            }
+
+            val platformInfo = platForm?.platform_sequence?.let {
+                ProtoBuf.decodeFromByteArray<PlatformSequence>(it)
+            }
+
             val stopsRaw = indianMetroDatabase.indianMetroDatabaseQueries
                 .getStopTimesWithStationInfoById(id = validTrip.stopTimesId)
                 .executeAsList()
@@ -87,7 +104,8 @@ class RouteRepositoryImpl(
             mapToStationList(
                 trip = validTrip,
                 tripInfo = latestTripInfo,
-                stations = stopsRaw
+                stations = stopsRaw,
+                platformSequence = platformInfo
             )
         }.toRouteResultUi()
     }
@@ -112,7 +130,8 @@ class RouteRepositoryImpl(
     fun mapToStationList(
         trip: GetTripsBetweenStations,
         tripInfo: GetTripsWithLineAndCalendar,
-        stations: List<GetStopTimesWithStationInfoById>
+        stations: List<GetStopTimesWithStationInfoById>,
+        platformSequence: PlatformSequence?
     ): List<StationUi> {
 
         val lineMetadata = tripInfo.lineMetadata?.let {
@@ -139,7 +158,9 @@ class RouteRepositoryImpl(
                 name = UiText.DynamicString(stopWithStation.stationName),
                 description = null,
                 platform = null,
-                platformNo = null,
+                platformNo = platformSequence?.let {
+                    it.stationPlatformMap[stopWithStation.stopSeq.toInt()] ?: it.id
+                },
                 time = time,
                 colorHex = lineMetadata?.primary ?: "#262626",
                 lineName = tripInfo.lineName,

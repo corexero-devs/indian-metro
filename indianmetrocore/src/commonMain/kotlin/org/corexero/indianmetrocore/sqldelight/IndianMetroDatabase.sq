@@ -147,3 +147,6 @@ JOIN StationName
   ON Station.id = StationName.station_id
 WHERE StopTimes.id = ?
   AND StationName.name_type = 0;
+
+getPlatformSequenceById:
+SELECT * FROM PlatformSequence WHERE id = ?;
