@@ -1,6 +1,7 @@
 package org.corexero.indianmetrocore.di
 
 import app.cash.sqldelight.async.coroutines.synchronous
+import com.codeancy.metroui.di.metroUiModule
 import com.codeancy.metroui.domain.repository.RouteRepository
 import com.codeancy.metroui.domain.repository.StationRepository
 import org.corexero.indianmetro.database.IndianMetroDatabase
@@ -59,6 +60,7 @@ val indianMetroModule = module {
     }.bind<CityTransitTopology>()
     singleOf(::AdjacencyListManager)
     singleOf(::RouteCalculator)
+    includes(metroUiModule)
 }
 
 expect val platformModule: Module
