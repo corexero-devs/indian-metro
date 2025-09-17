@@ -9,7 +9,22 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.goggleService)
     alias(libs.plugins.googleFirebaseCrashlytics)
+    alias(libs.plugins.play.publishing)
 }
+
+val versionCodeAndName: Pair<String, Int>
+    get() {
+        val properties = Properties()
+            .apply {
+                load(rootProject.file("version.properties").inputStream())
+            }
+        val versionName = properties.getProperty("VERSION")
+        val versionCode = versionName.split(".")
+            .map { it.toInt() }
+            .let { (a, b, c) -> a * 100000 + b * 1000 + c }
+        return Pair(versionName, versionCode)
+    }
+
 
 android {
     namespace = "org.corexero.indianmetro.metro"
@@ -19,8 +34,8 @@ android {
         applicationId = "org.corexero.indianmetro.metro"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = versionCodeAndName.second
+        versionName = versionCodeAndName.first
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -84,6 +99,11 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+play {
+    serviceAccountCredentials.set(file("${rootDir}/play-service-account.json"))
+    track.set("internal") // ya closed / production agar chahiye
 }
 
 dependencies {
@@ -153,3 +173,5 @@ enum class City {
     Nagpur,
     Agra
 }
+
+println(City.values().map { it.name.lowercase() })

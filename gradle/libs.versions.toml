@@ -44,6 +44,7 @@ koinComposeMultiplatform = "4.1.0"
 kconfig = "0.17.1"
 integrity = "1.5.0"
 browser = "1.9.0"
+play-publishing = "3.12.1"
 
 [libraries]
 android-database-sqlcipher = { module = "net.zetetic:android-database-sqlcipher", version.ref = "androidDatabaseSqlcipher" }
@@ -125,3 +126,4 @@ baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprof
 androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 androidLint = { id = "com.android.lint", version.ref = "agp" }
 buildkonfig = { id = "com.codingfeline.buildkonfig", version.ref = "kconfig" }
+play-publishing = { id = "com.github.triplet.play", version.ref = "play-publishing" }
