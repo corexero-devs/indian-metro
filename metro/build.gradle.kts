@@ -101,19 +101,6 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
-androidComponents {
-    onVariants(selector().all()) { v ->
-        // choose one; appId is usually what native checks should use
-        val appId = v.applicationId.get()
-        // val ns = v.namespace.get()
-
-        // expose to root via extra, keyed by variant name (e.g., delhiRelease)
-        rootProject.extensions.extraProperties.set("PACKAGE_NAME", appId)
-    }
-}
-
-val currentProject = project
-
 rootProject.project(":nativelib").pluginManager.withPlugin("com.android.library") {
     rootProject.project(":nativelib").extensions.configure<LibraryExtension> {
         defaultConfig {

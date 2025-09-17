@@ -45,6 +45,63 @@
     },
     {
       "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:5a5f955f803b5a4bd46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.ahmedabad"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:fbf53ff09cbe0ec4d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.bengaluru"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:c68577da188ae658d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.chennai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:659627005175:android:eea130e79a836f4dd46ff2",
         "android_client_info": {
           "package_name": "org.corexero.indianmetro.metro.delhi"
@@ -67,6 +124,158 @@
         "mobilesdk_app_id": "1:659627005175:android:02e5add92bf3caabd46ff2",
         "android_client_info": {
           "package_name": "org.corexero.indianmetro.metro.hyderabad"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:7defd8c1870431d8d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.jaipur"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:b90f9f9bb5749c01d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.kanpur"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:36db2aedb6f960ced46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.kochi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:261823f38f9848d8d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.kolkata"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:7449a94e7a8247e2d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.lucknow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:09e6a93c73fd2cd2d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.mumbai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:8a126e7fabe3065dd46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.nagpur"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpO9FxMrUTlzPw0dmjUKGPFOTc_G-0_BM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:659627005175:android:3bad817a5d27f148d46ff2",
+        "android_client_info": {
+          "package_name": "org.corexero.indianmetro.metro.pune"
         }
       },
       "oauth_client": [],
