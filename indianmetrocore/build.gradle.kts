@@ -24,6 +24,9 @@ kotlin {
         }.configure {
             instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
+        localDependencySelection {
+            selectBuildTypeFrom.set(listOf("debug", "release"))
+        }
     }
 
     // For iOS targets, this is also where you should
