@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import java.util.Properties
 
 plugins {
@@ -101,6 +101,19 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
+androidComponents {
+    onVariants(selector().all()) { v ->
+        // choose one; appId is usually what native checks should use
+        val appId = v.applicationId.get()
+        // val ns = v.namespace.get()
+
+        // expose to root via extra, keyed by variant name (e.g., delhiRelease)
+        rootProject.extensions.extraProperties.set("PACKAGE_NAME", appId)
+    }
+}
+
+val currentProject = project
+
 rootProject.project(":nativelib").pluginManager.withPlugin("com.android.library") {
     rootProject.project(":nativelib").extensions.configure<LibraryExtension> {
         defaultConfig {
@@ -113,7 +126,13 @@ rootProject.project(":nativelib").pluginManager.withPlugin("com.android.library"
             }
             val debugSha = properties.getProperty("DEBUG_CERT_SHA256") as String
             val releaseSha = properties.getProperty("RELEASE_CERT_SHA256") as String
-            val applicationId = properties.getProperty("APPLICATION_ID") as String
+            //noinspection WrongGradleMethod
+            val selectedFlavour = android.productFlavors.names.find {
+                return@find gradle.startParameter.taskNames.any { taskName ->
+                    taskName.contains(it, ignoreCase = true)
+                }
+            }
+            val applicationId = android.namespace + "." + selectedFlavour
             if (applicationId == null) {
                 throw Error("ApplicationId/Namespace not found! Make sure you have set the namespace in the android block.")
             }
