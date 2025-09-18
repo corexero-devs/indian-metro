@@ -119,7 +119,6 @@ jobs:
   build_apk:
     if: ${{ !inputs.publish }}
     runs-on: ubuntu-latest
-    needs: bump_version
     outputs:
       apk_path: ${{ steps.out.outputs.apk_path }}
     steps:
@@ -146,9 +145,9 @@ jobs:
         shell: bash
         run: |
           CITY_LC="$(printf '%s' "${{github.event.inputs.city}}" | tr '[:upper:]' '[:lower:]')"
-          A1="${{ env.MODULE_PATH }}/build/outputs/apk/${CITY_LC}/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
+          APK="${{ env.MODULE_PATH }}/build/outputs/apk/${CITY_LC}/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
           OUT="${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
-          cp "A1" "$OUT"
+          cp "$APK" "$OUT"
           echo "apk_path=$OUT" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
