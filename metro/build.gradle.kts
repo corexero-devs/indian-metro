@@ -67,12 +67,12 @@ android {
             keyPassword = prop("DEBUG_KEY_PASSWORD")
         }
 
-//        create("releaseConfig") {
-//            storeFile = rootProject.file(prop("RELEASE_STORE_FILE"))
-//            storePassword = prop("RELEASE_STORE_PASSWORD")
-//            keyAlias = prop("RELEASE_KEY_ALIAS")
-//            keyPassword = prop("RELEASE_KEY_PASSWORD")
-//        }
+        create("releaseConfig") {
+            storeFile = rootProject.file(prop("RELEASE_STORE_FILE"))
+            storePassword = prop("RELEASE_STORE_PASSWORD")
+            keyAlias = prop("RELEASE_KEY_ALIAS")
+            keyPassword = prop("RELEASE_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -81,7 +81,8 @@ android {
             signingConfig = signingConfigs.getByName("debugConfig")
         }
         release {
-            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("releaseConfig")
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
