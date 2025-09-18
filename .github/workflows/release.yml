@@ -99,7 +99,7 @@ jobs:
       - id: out
         shell: bash
         run: |
-          CITY_LC="$(printf '%s' "$CITY" | tr '[:upper:]' '[:lower:]')"
+          CITY_LC="$(printf '%s' "${{github.event.inputs.city}}" | tr '[:upper:]' '[:lower:]')"
           A1="${{ env.MODULE_PATH }}/build/outputs/bundle/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           A2="${{ env.MODULE_PATH }}/build/outputs/aab/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           [[ -f "$A1" ]] && AAB="$A1" || AAB="$A2"
