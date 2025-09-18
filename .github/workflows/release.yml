@@ -100,8 +100,8 @@ jobs:
         shell: bash
         run: |
           CITY_LC="$(printf '%s' "${{github.event.inputs.city}}" | tr '[:upper:]' '[:lower:]')"
-          A1="${{ env.MODULE_PATH }}/build/outputs/bundle/${{CITY_LC}}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
-          A2="${{ env.MODULE_PATH }}/build/outputs/aab/${{CITY_LC}}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
+          A1="${{ env.MODULE_PATH }}/build/outputs/bundle/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
+          A2="${{ env.MODULE_PATH }}/build/outputs/aab/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           [[ -f "$A1" ]] && AAB="$A1" || AAB="$A2"
           OUT="app-${{ needs.bump_version.outputs.version_name }}.aab"
           cp "$AAB" "$OUT"
