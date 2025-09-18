@@ -22,7 +22,7 @@ permissions:
 env:
   MODULE_PATH: metro
 
-#jobs:
+jobs:
 #  bump_version:
 #    runs-on: ubuntu-latest
 #    outputs:
