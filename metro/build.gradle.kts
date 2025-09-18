@@ -140,9 +140,6 @@ rootProject.project(":nativelib").pluginManager.withPlugin("com.android.library"
                 }
             }
             val applicationId = android.namespace + "." + selectedFlavour
-            if (applicationId == null) {
-                throw Error("ApplicationId/Namespace not found! Make sure you have set the namespace in the android block.")
-            }
             val allowedCerts = listOf(debugSha, releaseSha).joinToString(";")
             externalNativeBuild {
                 cmake {
@@ -173,5 +170,3 @@ enum class City {
     Nagpur,
     Agra
 }
-
-println(City.values().map { it.name.lowercase() })
