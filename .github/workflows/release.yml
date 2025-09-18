@@ -23,57 +23,57 @@ env:
   MODULE_PATH: metro
 
 jobs:
-  bump_version:
-    runs-on: ubuntu-latest
-    outputs:
-      version_name: ${{ steps.bump.outputs.version_name }}
-      version_code: ${{ steps.bump.outputs.version_code }}
-      tag: ${{ steps.bump.outputs.tag }}
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-
-      - id: bump
-        shell: bash
-        run: |
-          set -euo pipefail
-          FILE="version.properties"
-          [[ -f "$FILE" ]] || { echo "version.properties not found"; exit 1; }
-          
-          # Read current padded version, e.g. VERSION=01.04.000
-          CUR_LINE=$(grep -E '^VERSION=' "$FILE")
-          CUR=${CUR_LINE#VERSION=}
-          IFS='.' read -r MA MI PA <<< "$CUR"
-          MA=$((10#$MA)); MI=$((10#$MI)); PA=$((10#$PA))
-          
-          case "${{ github.event.inputs.bump }}" in
-            MAJOR) MA=$((MA+1)); MI=0; PA=0 ;;
-            MINOR) MI=$((MI+1)); PA=0 ;;
-            PATCH) PA=$((PA+1)) ;;
-            *) echo "unknown bump"; exit 1 ;;
-          esac
-          
-          # Padded version like 02.05.003
-          printf -v NEW_NAME "%02d.%02d.%03d" "$MA" "$MI" "$PA"
-          VERSION_CODE=$(( MA*100000 + MI*1000 + PA ))
-          TAG="v${MA}.${MI}.${PA}"   # unpadded tag
-          
-          # Write back to version.properties
-          sed -i -E "s/^VERSION=.*/VERSION=${NEW_NAME}/" "$FILE"
-          
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore: bump version to ${NEW_NAME} (${VERSION_CODE})"
-          git tag "$TAG"
-          git push --follow-tags
-          
-          echo "version_name=${NEW_NAME}" >> $GITHUB_OUTPUT
-          echo "version_code=${VERSION_CODE}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+#  bump_version:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      version_name: ${{ steps.bump.outputs.version_name }}
+#      version_code: ${{ steps.bump.outputs.version_code }}
+#      tag: ${{ steps.bump.outputs.tag }}
+#    steps:
+#      - uses: actions/checkout@v4
+#        with: { fetch-depth: 0 }
+#
+#      - id: bump
+#        shell: bash
+#        run: |
+#          set -euo pipefail
+#          FILE="version.properties"
+#          [[ -f "$FILE" ]] || { echo "version.properties not found"; exit 1; }
+#
+#          # Read current padded version, e.g. VERSION=01.04.000
+#          CUR_LINE=$(grep -E '^VERSION=' "$FILE")
+#          CUR=${CUR_LINE#VERSION=}
+#          IFS='.' read -r MA MI PA <<< "$CUR"
+#          MA=$((10#$MA)); MI=$((10#$MI)); PA=$((10#$PA))
+#
+#          case "${{ github.event.inputs.bump }}" in
+#            MAJOR) MA=$((MA+1)); MI=0; PA=0 ;;
+#            MINOR) MI=$((MI+1)); PA=0 ;;
+#            PATCH) PA=$((PA+1)) ;;
+#            *) echo "unknown bump"; exit 1 ;;
+#          esac
+#
+#          # Padded version like 02.05.003
+#          printf -v NEW_NAME "%02d.%02d.%03d" "$MA" "$MI" "$PA"
+#          VERSION_CODE=$(( MA*100000 + MI*1000 + PA ))
+#          TAG="v${MA}.${MI}.${PA}"   # unpadded tag
+#
+#          # Write back to version.properties
+#          sed -i -E "s/^VERSION=.*/VERSION=${NEW_NAME}/" "$FILE"
+#
+#          git config user.name "github-actions[bot]"
+#          git config user.email "github-actions[bot]@users.noreply.github.com"
+#          git commit -am "chore: bump version to ${NEW_NAME} (${VERSION_CODE})"
+#          git tag "$TAG"
+#          git push --follow-tags
+#
+#          echo "version_name=${NEW_NAME}" >> $GITHUB_OUTPUT
+#          echo "version_code=${VERSION_CODE}" >> $GITHUB_OUTPUT
+#          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
   build_aab:
     runs-on: ubuntu-latest
-    needs: bump_version
+#    needs: bump_version
     outputs:
       aab_path: ${{ steps.out.outputs.aab_path }}
     steps:
@@ -99,8 +99,9 @@ jobs:
       - id: out
         shell: bash
         run: |
-          A1="${{ env.MODULE_PATH }}/build/outputs/bundle/release/${{ env.MODULE_PATH }}-${{ toLower(github.event.inputs.city) }}-release.aab"
-          A2="${{ env.MODULE_PATH }}/build/outputs/aab/release/${{ env.MODULE_PATH }}-${{ toLower(github.event.inputs.city) }}-release.aab"
+          CITY_LC="$(printf '%s' "$CITY" | tr '[:upper:]' '[:lower:]')"
+          A1="${{ env.MODULE_PATH }}/build/outputs/bundle/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
+          A2="${{ env.MODULE_PATH }}/build/outputs/aab/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           [[ -f "$A1" ]] && AAB="$A1" || AAB="$A2"
           OUT="app-${{ needs.bump_version.outputs.version_name }}.aab"
           cp "$AAB" "$OUT"
