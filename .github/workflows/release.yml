@@ -175,5 +175,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: aab-${{ needs.bump_version.outputs.version_name }}
+          name: ${{ env.MODULE_PATH }}-${CITY_LC}-release.apk
           path: ${{ steps.out.outputs.apk_path }}
