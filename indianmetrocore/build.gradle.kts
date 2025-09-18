@@ -91,7 +91,7 @@ kotlin {
 
         androidMain {
             dependencies {
-                implementation(projects.nativelib)
+                api(projects.nativelib)
                 // Add Android-specific dependencies here. Note that this source set depends on
                 // commonMain by default and will correctly pull the Android artifacts of any KMP
                 // dependencies declared in commonMain.

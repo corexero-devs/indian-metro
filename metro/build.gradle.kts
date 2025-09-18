@@ -108,7 +108,6 @@ play {
 
 dependencies {
     implementation(projects.indianmetrocore)
-    implementation(projects.nativelib)
     implementation(projects.sutradhar)
     implementation(projects.metroUi)
     implementation(libs.androidx.core.ktx)
