@@ -24,5 +24,5 @@ rootProject.name = "IndianMetro"
 include(":indianmetrocore")
 include(":metroUi")
 include(":sutradhar")
-//include(":nativelib")
+include(":nativelib")
 include(":metro")
