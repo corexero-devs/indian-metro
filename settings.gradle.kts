@@ -22,9 +22,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "IndianMetro"
 include(":indianmetrocore")
-//include(":bengularu")
-//include(":hyderabad")
 include(":metroUi")
 include(":sutradhar")
-include(":nativelib")
+//include(":nativelib")
 include(":metro")

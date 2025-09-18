@@ -4,6 +4,3 @@
 [submodule "sutradhar"]
 	path = sutradhar
 	url = https://github.com/corexero-devs/SutraDhar.git
-[submodule "nativeLib"]
-	path = nativelib
-	url = https://github.com/corexero-devs/NativeLib_Android.git
