@@ -95,6 +95,9 @@ jobs:
   build_aab:
     runs-on: ubuntu-latest
     needs: [ bump_version,set_matrix ]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
     outputs:
       aab_path: ${{ steps.out.outputs.aab_path }}
     steps:
@@ -112,19 +115,19 @@ jobs:
 
       - run: chmod +x ./gradlew
 
-      - name: Build AAB for ${{ github.event.inputs.city }}
+      - name: Build AAB for ${{ matrix.city }}
         env:
           ORG_GRADLE_PROJECT_kotlin_native_ignoreDisabledTargets: "true"
-        run: ./gradlew :${{ env.MODULE_PATH }}:bundle${{github.event.inputs.city}}Release --stacktrace
+        run: ./gradlew :${{ env.MODULE_PATH }}:bundle${{matrix.city}}Release --stacktrace
 
       - id: out
         shell: bash
         run: |
-          CITY_LC="$(printf '%s' "${{github.event.inputs.city}}" | tr '[:upper:]' '[:lower:]')"
+          CITY_LC="$(printf '%s' "${{matrix.city}}" | tr '[:upper:]' '[:lower:]')"
           A1="${{ env.MODULE_PATH }}/build/outputs/bundle/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           A2="${{ env.MODULE_PATH }}/build/outputs/aab/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
           [[ -f "$A1" ]] && AAB="$A1" || AAB="$A2"
-          OUT="app-${{ needs.bump_version.outputs.version_name }}.aab"
+          OUT="app-${{ matrix.city }}.aab"
           cp "$AAB" "$OUT"
           echo "aab_path=$OUT" >> $GITHUB_OUTPUT
 
