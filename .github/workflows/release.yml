@@ -176,4 +176,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: aab-${{ needs.bump_version.outputs.version_name }}
-          path: ${{ steps.out.outputs.aab_path }}
+          path: ${{ steps.out.outputs.apk_path }}
