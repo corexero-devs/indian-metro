@@ -12,7 +12,7 @@ on:
       city:
         description: "City to release"
         type: choice
-        options: [ Mumbai, Delhi, Chennai, Bengaluru, Hyderabad, Kolkata, Kochi, Pune, Lucknow, Ahmedabad, Jaipur, Kanpur, Nagpur, Agra ]
+        options: [ All, Mumbai, Delhi, Chennai, Bengaluru, Hyderabad, Kolkata, Kochi, Pune, Lucknow, Ahmedabad, Jaipur, Kanpur, Nagpur, Agra ]
         default: all
         required: true
       publish:
@@ -27,6 +27,22 @@ env:
   MODULE_PATH: metro
 
 jobs:
+  set_matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+    steps:
+      - id: mk
+        shell: bash
+        run: |
+          ALL='["Mumbai","Delhi","Chennai","Bengaluru","Hyderabad","Kolkata","Kochi","Pune","Lucknow","Ahmedabad","Jaipur","Kanpur","Nagpur","Agra"]'
+          SEL='${{ inputs.city }}'
+          if [[ "$SEL" == "All" ]]; then
+            echo "matrix={\"city\":$ALL}" >> "$GITHUB_OUTPUT"
+          else
+            echo "matrix={\"city\":[\"$SEL\"]}" >> "$GITHUB_OUTPUT"
+          fi
+
   bump_version:
     if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
@@ -78,7 +94,7 @@ jobs:
 
   build_aab:
     runs-on: ubuntu-latest
-    needs: bump_version
+    needs: [ bump_version,set_matrix ]
     outputs:
       aab_path: ${{ steps.out.outputs.aab_path }}
     steps:
@@ -119,6 +135,10 @@ jobs:
   build_apk:
     if: ${{ !inputs.publish }}
     runs-on: ubuntu-latest
+    needs: [ set_matrix ]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
     outputs:
       apk_path: ${{ steps.out.outputs.apk_path }}
     steps:
@@ -136,15 +156,15 @@ jobs:
 
       - run: chmod +x ./gradlew
 
-      - name: Build Apk for ${{ github.event.inputs.city }}
+      - name: Build Apk for ${{ matrix.city }}
         env:
           ORG_GRADLE_PROJECT_kotlin_native_ignoreDisabledTargets: "true"
-        run: ./gradlew :${{ env.MODULE_PATH }}:assemble${{github.event.inputs.city}}Release --stacktrace
+        run: ./gradlew :${{ env.MODULE_PATH }}:assemble${{matrix.city}}Release --stacktrace
 
       - id: out
         shell: bash
         run: |
-          CITY_LC="$(printf '%s' "${{github.event.inputs.city}}" | tr '[:upper:]' '[:lower:]')"
+          CITY_LC="$(printf '%s' "${{matrix.city}}" | tr '[:upper:]' '[:lower:]')"
           APK="${{ env.MODULE_PATH }}/build/outputs/apk/${CITY_LC}/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
           OUT="${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
           cp "$APK" "$OUT"
