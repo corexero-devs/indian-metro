@@ -133,7 +133,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: aab-${{ needs.bump_version.outputs.version_name }}
+          name: ${{ env.MODULE_PATH }}-${{matrix.city}}-${{ needs.bump_version.outputs.version_name }}-release.aab
           path: ${{ steps.out.outputs.aab_path }}
   build_apk:
     if: ${{ !inputs.publish }}
