@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalStdlibApi::class)
 
 import com.android.build.api.dsl.LibraryExtension
+import com.android.build.gradle.internal.cxx.logging.warnln
 import java.util.Properties
 
 plugins {
@@ -131,16 +132,28 @@ rootProject.project(":nativelib").pluginManager.withPlugin("com.android.library"
             } else {
                 throw Error("${project.projectDir}/nativeLib.properties file is missing!")
             }
-            val debugSha = properties.getProperty("DEBUG_CERT_SHA256") as String
-            val releaseSha = properties.getProperty("RELEASE_CERT_SHA256") as String
+
             //noinspection WrongGradleMethod
             val selectedFlavour = android.productFlavors.names.find {
-                return@find gradle.startParameter.taskNames.any { taskName ->
+                gradle.startParameter.taskNames.any { taskName ->
                     taskName.contains(it, ignoreCase = true)
                 }
-            }
+            } as? String
+            val debugSha = properties.getProperty("DEBUG_CERT_SHA256") as String
+            val releaseSha = properties.getProperty("RELEASE_CERT_SHA256") as String
+
+            val platStoreSha =
+                selectedFlavour?.let {
+                    properties.getProperty("${it.uppercase()}_PLAY_STORE_SHA256") as String
+                }
+
             val applicationId = android.namespace + "." + selectedFlavour
-            val allowedCerts = listOf(debugSha, releaseSha).joinToString(";")
+            val allowedCerts = if (platStoreSha == null) {
+                warnln("No Play Store SHA found for $selectedFlavour")
+                listOf(debugSha, releaseSha).joinToString(";")
+            } else {
+                listOf(debugSha, releaseSha, platStoreSha).joinToString(";")
+            }
             externalNativeBuild {
                 cmake {
                     cppFlags("")
