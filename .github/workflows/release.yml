@@ -253,7 +253,7 @@ jobs:
         with:
           appId: ${{ steps.prep.outputs.app_id }}
           serviceCredentialsFileContent: ${{ steps.prep.outputs.sa_contents }}
-          file: ${{ env.MODULE_PATH }}-${{ matrix.city }}-${{ needs.bump_version.outputs.version_name }}-release.apk
+          file: ${{ needs.build_apk.outputs.apk_path }}
           releaseNotes: ${{ format('CI {0} • tag {1} • city {2}', needs.bump_version.outputs.version_name, needs.bump_version.outputs.tag, matrix.city) }}
 
       - name: Create GitHub Release (attach the APK)
@@ -261,4 +261,4 @@ jobs:
         with:
           tag_name: ${{ needs.bump_version.outputs.tag }}
           name: "Android ${{ needs.bump_version.outputs.version_name }} (${matrix.city})"
-          files: ${{ env.MODULE_PATH }}-${{ matrix.city }}-${{ needs.bump_version.outputs.version_name }}-release.apk
+          files: ${{ needs.build_apk.outputs.apk_path }}
