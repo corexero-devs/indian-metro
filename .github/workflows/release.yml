@@ -232,6 +232,24 @@ jobs:
           echo "$FIREBASE_SERVICE_ACCOUNT_JSON" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
+      - name: list all possible APK locations
+        run: |
+          echo "================ DEBUG: LISTING FILES ================"
+          echo "PWD: $(pwd)"
+          echo "--- Root listing ---"
+          ls -R .
+
+          echo "--- Find any APKs under the entire workspace ---"
+          find . -type f -iname "*.apk" -print
+
+          echo "--- Find any zips under the workspace ---"
+          find . -type f -iname "*.zip" -print
+
+          echo "--- Expected module build path for this matrix ---"
+          CITY_LC="$(printf '%s' "${{ matrix.city }}" | tr '[:upper:]' '[:lower:]')"
+          echo "./${{ env.MODULE_PATH }}/build/outputs/apk/${CITY_LC}/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
+          echo "======================================================"
+
       - name: Set APK path (exact, no checks)
         id: set_apk
         shell: bash
