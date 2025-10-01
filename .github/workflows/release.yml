@@ -256,6 +256,14 @@ jobs:
           file: ${{ needs.build_apk.outputs.apk_path }}
           releaseNotes: ${{ format('CI {0} • tag {1} • city {2}', needs.bump_version.outputs.version_name, needs.bump_version.outputs.tag, matrix.city) }}
 
+      - name: Distribute to Firebase App Distribution
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ steps.prep.outputs.app_id }}
+          serviceCredentialsFileContent: ${{ steps.prep.outputs.sa_contents }}
+          file: ${{ needs.build_apk.outputs.apk_path }}
+          releaseNotes: ${{ format('CI {0} • tag {1} • city {2}', needs.bump_version.outputs.version_name, needs.bump_version.outputs.tag, matrix.city) }}
+
       - name: Create GitHub Release (attach the APK)
         uses: softprops/action-gh-release@v2
         with:
