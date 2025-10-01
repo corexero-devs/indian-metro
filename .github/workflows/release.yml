@@ -91,19 +91,18 @@ jobs:
           echo "version_code=${VERSION_CODE}" >> $GITHUB_OUTPUT
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
-  build_aab:
+  publish_play:
     if: ${{ inputs.publish }}
     runs-on: ubuntu-latest
     needs: [ bump_version,set_matrix ]
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.set_matrix.outputs.matrix) }}
-    outputs:
-      aab_path: ${{ steps.out.outputs.aab_path }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ github.ref_name }}     # build from the commit that bumped version.properties
+          fetch-depth: 0
           submodules: true
           token: ${{ secrets.PAT_TOKEN }}
 
@@ -115,26 +114,11 @@ jobs:
 
       - run: chmod +x ./gradlew
 
-      - name: Build AAB for ${{ matrix.city }}
+      - name: Publish to Google Play (internal) via GPP
         env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}  # raw JSON
           ORG_GRADLE_PROJECT_kotlin_native_ignoreDisabledTargets: "true"
-        run: ./gradlew :${{ env.MODULE_PATH }}:bundle${{matrix.city}}Release --stacktrace
-
-      - id: out
-        shell: bash
-        run: |
-          CITY_LC="$(printf '%s' "${{matrix.city}}" | tr '[:upper:]' '[:lower:]')"
-          A1="${{ env.MODULE_PATH }}/build/outputs/bundle/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
-          A2="${{ env.MODULE_PATH }}/build/outputs/aab/${CITY_LC}Release/${{ env.MODULE_PATH }}-${CITY_LC}-release.aab"
-          [[ -f "$A1" ]] && AAB="$A1" || AAB="$A2"
-          OUT="app-${{ matrix.city }}.aab"
-          cp "$AAB" "$OUT"
-          echo "aab_path=$OUT" >> $GITHUB_OUTPUT
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.MODULE_PATH }}-${{matrix.city}}-${{ needs.bump_version.outputs.version_name }}-release.aab
-          path: ${{ steps.out.outputs.aab_path }}
+        run: ./gradlew :${{ env.MODULE_PATH }}:publish${{matrix.city}}ReleaseBundle --stacktrace
   build_apk:
     runs-on: ubuntu-latest
     needs: [ set_matrix,bump_version ]
