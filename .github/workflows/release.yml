@@ -248,20 +248,21 @@ jobs:
           echo "$FIREBASE_SERVICE_ACCOUNT_JSON" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
 
-      - name: Distribute to Firebase App Distribution
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ steps.prep.outputs.app_id }}
-          serviceCredentialsFileContent: ${{ steps.prep.outputs.sa_contents }}
-          file: ${{ needs.build_apk.outputs.apk_path }}
-          releaseNotes: ${{ format('CI {0} • tag {1} • city {2}', needs.bump_version.outputs.version_name, needs.bump_version.outputs.tag, matrix.city) }}
+      - name: Set APK path (exact, no checks)
+        id: set_apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          CITY_LC="$(printf '%s' "${{ matrix.city }}" | tr '[:upper:]' '[:lower:]')"
+          APK="${{ env.MODULE_PATH }}/build/outputs/apk/${CITY_LC}/release/${{ env.MODULE_PATH }}-${CITY_LC}-release.apk"
+          echo "apk_file=$APK" >> "$GITHUB_OUTPUT"
 
       - name: Distribute to Firebase App Distribution
         uses: wzieba/Firebase-Distribution-Github-Action@v1
         with:
           appId: ${{ steps.prep.outputs.app_id }}
           serviceCredentialsFileContent: ${{ steps.prep.outputs.sa_contents }}
-          file: ${{ needs.build_apk.outputs.apk_path }}
+          file: ${{ steps.set_apk.outputs.apk_file }}
           releaseNotes: ${{ format('CI {0} • tag {1} • city {2}', needs.bump_version.outputs.version_name, needs.bump_version.outputs.tag, matrix.city) }}
 
       - name: Create GitHub Release (attach the APK)
@@ -269,4 +270,4 @@ jobs:
         with:
           tag_name: ${{ needs.bump_version.outputs.tag }}
           name: "Android ${{ needs.bump_version.outputs.version_name }} (${matrix.city})"
-          files: ${{ needs.build_apk.outputs.apk_path }}
+          files: ${{ steps.set_apk.outputs.apk_file }}
