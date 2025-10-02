@@ -186,7 +186,7 @@ enum class City {
 
 // ---------- per-flavour DB generation (only for active flavours) ----------
 val scriptRelativePath = "scripts/split-city.js" // adjust if your script is elsewhere
-val defaultSourceDb = "${rootDir.resolve("data").resolve("metro.sqlite")}"
+val defaultSourceDb = "${rootDir.resolve("data").resolve("schedule_internal_db.db")}"
 val sourceDbProp: String = (project.findProperty("sourceDb") as? String) ?: defaultSourceDb
 
 // If you want to write into src/<flavour>/assets (mutates source), set this true.
@@ -236,8 +236,9 @@ if (requestedFlavours.isEmpty()) {
             // node script path (absolute)
             val scriptPath = rootDir.resolve(scriptRelativePath).absolutePath
             // command line - uses 'node' on PATH. Set full node path if required.
-            commandLine("node", scriptPath, sourceDbProp, cityId, outDir.absolutePath)
-
+           // commandLine("node", scriptPath, sourceDbProp, cityId, outDir.absolutePath)
+            val nodeBin: String = (project.findProperty("nodeBin") as? String) ?: "node"
+            commandLine(nodeBin, scriptPath, sourceDbProp, cityId, outDir.absolutePath)
             // up-to-date checks: consider the input combined DB and the script
             inputs.file(file(sourceDbProp))
             inputs.file(file(scriptPath))
