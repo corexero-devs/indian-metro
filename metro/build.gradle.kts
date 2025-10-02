@@ -183,3 +183,69 @@ enum class City {
     Nagpur,
     Agra
 }
+
+// ---------- per-flavour DB generation (only for active flavours) ----------
+val scriptRelativePath = "scripts/split-city.js" // adjust if your script is elsewhere
+val defaultSourceDb = "${rootDir.resolve("data").resolve("metro.sqlite")}"
+val sourceDbProp: String = (project.findProperty("sourceDb") as? String) ?: defaultSourceDb
+
+// If you want to write into src/<flavour>/assets (mutates source), set this true.
+// Otherwise leave false to write into build/generated/assets/<flavour> (recommended).
+val writeIntoSrc: Boolean = (project.findProperty("writeIntoSrc") as? String)?.toBoolean() ?: true
+
+// Helper: allow overriding cityId for a flavor with -PcityId.<flavour>=<id> or in gradle.properties
+fun resolvedCityIdFor(flavorName: String, defaultIdx: Int): String {
+    val p = project.findProperty("cityId.$flavorName") as? String
+    return p ?: defaultIdx.toString()
+}
+
+// Build list of flavour names from your enum. Keep in sync with your City enum.
+val flavours = City.values().map { it.name.lowercase() } // City enum already in your build file
+
+// Find flavors that are being built in this invocation (task names contain the flavor)
+val requestedTaskNames = gradle.startParameter.taskNames.map { it.lowercase() }
+val requestedFlavours = flavours.filter { flavour ->
+    requestedTaskNames.any { tn -> tn.contains(flavour) }
+}
+
+// If no explicit flavour found in task names, we won't perform generation (avoid doing everything unexpectedly).
+if (requestedFlavours.isEmpty()) {
+    logger.info("No city flavour detected in invoked Gradle tasks — DB generation skipped. " +
+            "Run a specific flavour task (eg. assembleMumbaiDebug) or set -PforceGenerateAll=true")
+} else {
+    // For each requested flavour create and run a task
+    requestedFlavours.forEachIndexed { idx, flavour ->
+        val cityIdx = City.values().indexOfFirst { it.name.lowercase() == flavour }.let { if (it >= 0) it else idx }
+        val taskName = "generateDbFor${flavour.replaceFirstChar { it.uppercase() }}"
+        val outDirSrc = file("${projectDir}/src/$flavour/assets")
+        val outDirBuild = file("${buildDir}/generated/assets/$flavour")
+        val outDir = if (writeIntoSrc) outDirSrc else outDirBuild
+
+        tasks.register<Exec>(taskName) {
+            group = "generation"
+            description = "Generate DB for flavour '$flavour' -> ${outDir.absolutePath}"
+
+            // ensure outDir exists
+            doFirst {
+                if (!outDir.exists()) outDir.mkdirs()
+            }
+
+            // resolved city id (allow per flavour override)
+            val cityId = resolvedCityIdFor(flavour, cityIdx)
+
+            // node script path (absolute)
+            val scriptPath = rootDir.resolve(scriptRelativePath).absolutePath
+            // command line - uses 'node' on PATH. Set full node path if required.
+            commandLine("node", scriptPath, sourceDbProp, cityId, outDir.absolutePath)
+
+            // up-to-date checks: consider the input combined DB and the script
+            inputs.file(file(sourceDbProp))
+            inputs.file(file(scriptPath))
+            outputs.dir(outDir)
+        }
+
+        // ensure preBuild depends on this task so it runs before packaging
+        tasks.named("preBuild").configure { dependsOn(taskName) }
+    }
+}
+// ---------- end per-flavour DB generation ----------
