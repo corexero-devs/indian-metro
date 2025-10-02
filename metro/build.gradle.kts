@@ -221,6 +221,10 @@ if (requestedFlavours.isEmpty()) {
         val outDirBuild = file("${buildDir}/generated/assets/$flavour")
         val outDir = if (writeIntoSrc) outDirSrc else outDirBuild
 
+
+        // desired output filename (change to "metro.sqlite" if you prefer a constant name)
+        val outFileName = "${flavour}.sqlite"
+
         tasks.register<Exec>(taskName) {
             group = "generation"
             description = "Generate DB for flavour '$flavour' -> ${outDir.absolutePath}"
@@ -244,6 +248,7 @@ if (requestedFlavours.isEmpty()) {
             inputs.file(file(scriptPath))
             outputs.dir(outDir)
         }
+
 
         // ensure preBuild depends on this task so it runs before packaging
         tasks.named("preBuild").configure { dependsOn(taskName) }
