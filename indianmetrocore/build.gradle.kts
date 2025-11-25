@@ -65,7 +65,6 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(libs.kotlin.stdlib)
-                implementation(projects.metroUi)
 
                 api(libs.koin.core)
                 implementation(libs.koin.compose)

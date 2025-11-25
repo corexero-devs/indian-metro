@@ -1,6 +1,3 @@
-[submodule "metroUi"]
-	path = metroUi
-	url = https://github.com/corexero-devs/metro-core.git
 [submodule "sutradhar"]
 	path = sutradhar
 	url = https://github.com/corexero-devs/SutraDhar.git
