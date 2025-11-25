@@ -74,6 +74,7 @@ kotlin {
                 implementation(libs.sqlDelight.common)
 
                 implementation(projects.sutradhar)
+                implementation(projects.metroUi)
                 implementation(libs.datastore)
                 implementation(libs.datastore.preferences)
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")

@@ -4,3 +4,6 @@
 [submodule "nativelib"]
 	path = nativelib
 	url = https://github.com/corexero-devs/NativeLib_Android.git
+[submodule "metro-ui"]
+	path = metro-ui
+	url = https://github.com/corexero-devs/metro-ui

@@ -111,6 +111,7 @@ play {
 dependencies {
     implementation(projects.indianmetrocore)
     implementation(projects.sutradhar)
+    implementation(projects.metroUi)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.material)
